@@ -58,6 +58,17 @@ jobs:
           name: crash-report
           path: error_logs.txt
 
+      # ── ALWAYS: upload training logs and MLflow artifacts ────────
+      # Capture artifacts from all runs (success or failure)
+      - name: Upload Training Artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: training-artifacts
+          path: |
+            training_logs.txt
+            mlruns/
+
       # ── ALWAYS: cleanup step runs no matter what ─────────────────
       # Lecture 6: always() → Run no matter what
       # Use for shutting down expensive GPU instances
