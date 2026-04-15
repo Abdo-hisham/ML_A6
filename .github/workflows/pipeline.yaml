@@ -52,7 +52,15 @@ jobs:
       - name: Run Training
         run: python src/train.py
 
-      # ── ON FAILURE: upload logs so dev can investigate ──────────
+      - name: List Generated Files
+        if: always()
+        run: |
+          echo "Current directory:"
+          pwd
+          echo "Files created:"
+          ls -la
+          echo "MLflow directory:"
+          ls -la mlruns/ 2>/dev/null || echo "No mlruns directory"
       # Lecture 6 Trick: failure() only runs if a previous step failed
       # This saves storage (we don't upload logs for every successful run)
       - name: Upload Error Logs on Failure
@@ -64,14 +72,20 @@ jobs:
 
       # ── ALWAYS: upload training logs and MLflow artifacts ────────
       # Capture artifacts from all runs (success or failure)
-      - name: Upload Training Artifacts
+      - name: Upload Training Logs
+        if: always() && hashFiles('training_logs.txt') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: training-logs
+          path: training_logs.txt
+
+      - name: Upload MLflow Data
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: training-artifacts
-          path: |
-            training_logs.txt
-            mlruns/
+          name: mlflow-artifacts
+          path: mlruns/
+          if-no-files-found: ignore
 
       # ── ALWAYS: cleanup step runs no matter what ─────────────────
       # Lecture 6: always() → Run no matter what
