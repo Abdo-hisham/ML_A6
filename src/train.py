@@ -1,7 +1,3 @@
-"""
-Simple ML training script.
-"""
-
 import logging
 
 logging.basicConfig(filename="error_logs.txt", level=logging.ERROR)
@@ -11,9 +7,8 @@ def main():
     """Execute model training."""
     try:
         print("Starting training...")
-        # Simulate training
-        accuracy = 0.95
-        print(f"Training complete. Accuracy: {accuracy}")
+        # Intentionally cause an error to generate artifacts
+        raise ValueError("Simulated training failure for artifact testing")
     except Exception as e:
         logging.error(f"Training failed: {e}")
         raise

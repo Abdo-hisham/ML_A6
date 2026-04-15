@@ -3,11 +3,6 @@ name: ML Training Pipeline
 on: [push]
 
 jobs:
-
-  # ── GATEKEEPER JOB ──────────────────────────────────────────────
-  # Lightweight job that runs first (cheap, no GPU)
-  # If this fails, train will never start
-  linter:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -19,11 +14,6 @@ jobs:
       - name: Run Linter
         run: flake8 src/train.py
 
-  # ── EXPENSIVE TRAINING JOB ──────────────────────────────────────
-  # Three conditions must ALL be true:
-  #   1. linter job passed      → needs: linter
-  #   2. branch is main         → github.ref == 'refs/heads/main'
-  #   3. commit message has tag → contains(github.event.head_commit.message, '[run-train]')
   train:
     needs: linter
     runs-on: ubuntu-latest
@@ -44,11 +34,9 @@ jobs:
       - name: Install Dependencies
         run: pip install -r requirements.txt
 
-      # ── MAIN TRAINING STEP ──────────────────────────────────────
       - name: Run Training
         run: python src/train.py
 
-      # ── ON FAILURE: upload error logs for debugging ─────────────
       - name: Upload Error Logs on Failure
         if: failure()
         uses: actions/upload-artifact@v4
@@ -56,7 +44,6 @@ jobs:
           name: crash-report
           path: error_logs.txt
 
-      # ── ALWAYS: cleanup step runs no matter what ─────────────────
       - name: Cleanup Temporary Cloud Volumes
         if: always()
         run: echo "Cleaning up temporary cloud volumes..."
