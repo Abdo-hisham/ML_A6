@@ -9,6 +9,8 @@ jobs:
   # If this fails, train will never start
   linter:
     runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -27,6 +29,8 @@ jobs:
   train:
     needs: linter
     runs-on: ubuntu-latest   # swap to cloud-gpu in real life
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     if: |
       success() &&
       github.ref == 'refs/heads/main' &&
