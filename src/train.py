@@ -11,8 +11,9 @@ def main():
     """Execute model training and log errors."""
     try:
         print("Starting training...")
-        # Intentionally cause an error to generate error logs
-        raise ValueError("Simulated training failure to test artifact upload")
+        # Simulate training
+        accuracy = 0.95
+        print(f"Training complete. Accuracy: {accuracy}")
     except Exception as e:
         logging.error(f"Training failed: {e}")
         raise
