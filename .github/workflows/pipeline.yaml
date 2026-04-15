@@ -1,0 +1,61 @@
+name: ML Training Pipeline
+
+on: [push]
+
+jobs:
+
+  # ── GATEKEEPER JOB ──────────────────────────────────────────────
+  # Lightweight job that runs first (cheap, no GPU)
+  # If this fails, train will never start
+  linter:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install flake8
+        run: pip install flake8
+
+      - name: Run Linter
+        run: flake8 src/train.py
+
+  # ── EXPENSIVE TRAINING JOB ──────────────────────────────────────
+  # Three conditions must ALL be true:
+  #   1. linter job passed      → needs: linter
+  #   2. branch is main         → github.ref == 'refs/heads/main'
+  #   3. commit message has tag → contains(github.event.head_commit.message, '[run-train]')
+  train:
+    needs: linter
+    runs-on: ubuntu-latest   # swap to cloud-gpu in real life
+    if: |
+      success() &&
+      github.ref == 'refs/heads/main' &&
+      contains(github.event.head_commit.message, '[run-train]')
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install Dependencies
+        run: pip install -r requirements.txt
+
+      # ── MAIN TRAINING STEP ──────────────────────────────────────
+      - name: Run Training
+        run: python src/train.py
+
+      # ── ON FAILURE: upload logs so dev can investigate ──────────
+      # Lecture 6 Trick: failure() only runs if a previous step failed
+      # This saves storage (we don't upload logs for every successful run)
+      - name: Upload Error Logs on Failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: crash-report
+          path: error_logs.txt
+
+      # ── ALWAYS: cleanup step runs no matter what ─────────────────
+      # Lecture 6: always() → Run no matter what
+      # Use for shutting down expensive GPU instances
+      - name: Cleanup Temporary Cloud Volumes
+        if: always()
+        run: echo "Cleaning up temporary cloud volumes..."
