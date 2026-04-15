@@ -9,8 +9,6 @@ jobs:
   # If this fails, train will never start
   linter:
     runs-on: ubuntu-latest
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -28,9 +26,7 @@ jobs:
   #   3. commit message has tag → contains(github.event.head_commit.message, '[run-train]')
   train:
     needs: linter
-    runs-on: ubuntu-latest   # swap to cloud-gpu in real life
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    runs-on: ubuntu-latest
     if: |
       success() &&
       github.ref == 'refs/heads/main' &&
@@ -52,44 +48,15 @@ jobs:
       - name: Run Training
         run: python src/train.py
 
-      - name: List Generated Files
-        if: always()
-        run: |
-          echo "Current directory:"
-          pwd
-          echo "Files created:"
-          ls -la
-          echo "MLflow directory:"
-          ls -la mlruns/ 2>/dev/null || echo "No mlruns directory"
-      # Lecture 6 Trick: failure() only runs if a previous step failed
-      # This saves storage (we don't upload logs for every successful run)
+      # ── ON FAILURE: upload error logs for debugging ─────────────
       - name: Upload Error Logs on Failure
-        if: failure() && hashFiles('error_logs.txt') != ''
+        if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: crash-report
           path: error_logs.txt
 
-      # ── ALWAYS: upload training logs and MLflow artifacts ────────
-      # Capture artifacts from all runs (success or failure)
-      - name: Upload Training Logs
-        if: always() && hashFiles('training_logs.txt') != ''
-        uses: actions/upload-artifact@v4
-        with:
-          name: training-logs
-          path: training_logs.txt
-
-      - name: Upload MLflow Data
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: mlflow-artifacts
-          path: mlruns/
-          if-no-files-found: ignore
-
       # ── ALWAYS: cleanup step runs no matter what ─────────────────
-      # Lecture 6: always() → Run no matter what
-      # Use for shutting down expensive GPU instances
       - name: Cleanup Temporary Cloud Volumes
         if: always()
         run: echo "Cleaning up temporary cloud volumes..."
